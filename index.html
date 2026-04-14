@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Studio — Создавай как профессионал</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface2: #1a1a25;
+            --border: rgba(255,255,255,0.06);
+            --accent: #FF0033;
+            --accent-glow: rgba(255,0,51,0.3);
+            --accent2: #00D4FF;
+            --text: #f0f0f5;
+            --text-muted: #6b6b80;
+            --gradient: linear-gradient(135deg, #FF0033 0%, #FF6B35 50%, #FFB800 100%);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+        /* Noise overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* Custom cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--accent);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+            mix-blend-mode: difference;
+        }
+        .cursor.hover { transform: scale(2.5); background: var(--accent); opacity: 0.3; }
+
+        /* Nav */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(20px);
+            background: rgba(10,10,15,0.7);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.4s ease;
+        }
+        nav.scrolled { padding: 14px 40px; background: rgba(10,10,15,0.92); }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.5px;
+        }
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+            transition: color 0.3s;
+            position: relative;
+        }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1.5px;
+            background: var(--accent);
+            transition: width 0.3s ease;
+        }
+        .nav-links a:hover { color: var(--text); }
+        .nav-links a:hover::after { width: 100%; }
+
+        .nav-cta {
+            padding: 10px 22px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            letter-spacing: 0.3px;
+        }
+        .nav-cta:hover { transform: scale(1.05); box-shadow: 0 0 30px var(--accent-glow); }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 120px 20px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 60% 40%, rgba(255,0,51,0.08) 0%, transparent 60%),
+                        radial-gradient(ellipse at 30% 70%, rgba(0,212,255,0.05) 0%, transparent 50%);
+            animation: heroFloat 20s ease-in-out infinite;
+        }
+        @keyframes heroFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(2%, 1%) rotate(1deg); }
+            66% { transform: translate(-1%, 2%) rotate(-1deg); }
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,0,51,0.1);
+            border: 1px solid rgba(255,0,51,0.2);
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--accent);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.2s;
+        }
+        .hero-badge .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+        .hero h1 {
+            font-size: clamp(52px, 8vw, 110px);
+            font-weight: 900;
+            line-height: 0.95;
+            letter-spacing: -4px;
+            margin-bottom: 28px;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.4s;
+        }
+        .hero h1 .gradient-text {
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero h1 .outline {
+            -webkit-text-stroke: 1.5px var(--text);
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-sub {
+            font-size: clamp(16px, 2vw, 20px);
+            color: var(--text-muted);
+            max-width: 520px;
+            margin-bottom: 48px;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.6s;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 0.8s;
+        }
+
+        .btn-primary {
+            padding: 16px 36px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.2px;
+        }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 20px 60px var(--accent-glow); }
+        .btn-primary svg { transition: transform 0.3s; }
+        .btn-primary:hover svg { transform: translateX(4px); }
+
+        .btn-secondary {
+            padding: 16px 36px;
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-secondary:hover { background: var(--surface); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+
+        .hero-scroll {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            opacity: 0;
+            animation: fadeUp 0.8s ease forwards 1s;
+        }
+        .scroll-line {
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--accent), transparent);
+            animation: scrollPulse 2s infinite;
+        }
+        @keyframes scrollPulse { 0% { opacity: 0; transform: scaleY(0); transform-origin: top; } 50% { opacity: 1; transform: scaleY(1); } 100% { opacity: 0; transform: scaleY(1); transform-origin: bottom; } }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stats bar */
+        .stats-bar {
+            padding: 60px 40px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--border);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .stat-item {
+            background: var(--bg);
+            padding: 40px;
+            text-align: center;
+            transition: background 0.3s;
+        }
+        .stat-item:hover { background: var(--surface); }
+        .stat-number {
+            font-size: clamp(36px, 4vw, 56px);
+            font-weight: 800;
+            letter-spacing: -2px;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        /* Features */
+        .features {
+            padding: 140px 40px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .section-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent);
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: clamp(36px, 5vw, 64px);
+            font-weight: 800;
+            letter-spacing: -2px;
+            line-height: 1.05;
+            margin-bottom: 20px;
+        }
+        .section-sub {
+            font-size: 17px;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin-bottom: 80px;
+            line-height: 1.7;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+        }
+        .feature-card {
+            background: var(--surface);
+            border-radius: 20px;
+            padding: 40px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--gradient);
+            opacity: 0;
+            transition: opacity 0.4s;
+            border-radius: 20px;
+        }
+        .feature-card:hover { transform: translateY(-8px); }
+        .feature-card:hover::before { opacity: 0.05; }
+
+        .feature-icon {
+            width: 52px;
+            height: 52px;
+            background: rgba(255,0,51,0.1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 24px;
+            transition: all 0.3s;
+        }
+        .feature-card:hover .feature-icon { background: rgba(255,0,51,0.2); transform: scale(1.1); }
+
+        .feature-card h3 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+        .feature-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        /* Marquee */
+        .marquee-section {
+            padding: 60px 0;
+            overflow: hidden;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .marquee {
+            display: flex;
+            gap: 40px;
+            animation: marquee 30s linear infinite;
+            width: max-content;
+        }
+        .marquee-item {
+            font-size: clamp(24px, 4vw, 48px);
+            font-weight: 800;
+            letter-spacing: -1px;
+            white-space: nowrap;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .marquee-item.outline {
+            -webkit-text-stroke: 1.5px var(--accent);
+            -webkit-text-fill-color: transparent;
+        }
+        @keyframes marquee {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        /* Showreel */
+        .showreel {
+            padding: 140px 40px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .showreel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 60px;
+        }
+        .showreel-card {
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 16/10;
+            background: var(--surface);
+            cursor: pointer;
+            transition: transform 0.4s;
+        }
+        .showreel-card:hover { transform: scale(1.02); }
+        .showreel-card:first-child { grid-column: span 2; aspect-ratio: 21/9; }
+
+        .showreel-preview {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            position: relative;
+        }
+        .showreel-preview .mock-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            inset: 0;
+        }
+        .play-btn {
+            width: 72px;
+            height: 72px;
+            background: rgba(255,0,51,0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        .showreel-card:hover .play-btn { transform: scale(1.15); box-shadow: 0 0 60px var(--accent-glow); }
+        .mock-thumb { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.1); font-size: 80px; font-weight: 900; }
+
+        .showreel-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 30px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            z-index: 1;
+        }
+        .showreel-info h4 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+        .showreel-info span { font-size: 13px; color: var(--text-muted); }
+
+        /* Pricing */
+        .pricing {
+            padding: 140px 40px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 60px;
+        }
+        .pricing-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 44px 36px;
+            transition: all 0.4s;
+            position: relative;
+        }
+        .pricing-card.featured {
+            background: var(--surface2);
+            border-color: var(--accent);
+            transform: scale(1.05);
+        }
+        .pricing-card:hover { border-color: rgba(255,0,51,0.4); }
+        .pricing-card.featured:hover { border-color: var(--accent); box-shadow: 0 40px 80px rgba(255,0,51,0.15); }
+
+        .pricing-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 14px;
+            background: var(--accent);
+            border-radius: 50px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pricing-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+        .pricing-price {
+            font-size: 52px;
+            font-weight: 900;
+            letter-spacing: -3px;
+            margin-bottom: 6px;
+        }
+        .pricing-price .currency { font-size: 24px; vertical-align: super; font-weight: 600; }
+        .pricing-price .period { font-size: 14px; color: var(--text-muted); font-weight: 400; letter-spacing: 0; }
+        .pricing-desc { font-size: 13px; color: var(--text-muted); margin-bottom: 32px; line-height: 1.6; }
+
+        .pricing-features {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 36px;
+        }
+        .pricing-features li {
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-muted);
+        }
+        .pricing-features li::before {
+            content: '✓';
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .pricing-features li.muted { opacity: 0.4; }
+
+        .pricing-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+        .pricing-card.featured .pricing-btn { background: var(--accent); color: #fff; }
+        .pricing-card:not(.featured) .pricing-btn { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+        .pricing-btn:hover { transform: translateY(-2px); }
+
+        /* CTA */
+        .cta-section {
+            padding: 140px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, rgba(255,0,51,0.1), transparent 70%);
+        }
+        .cta-section h2 {
+            font-size: clamp(40px, 6vw, 80px);
+            font-weight: 900;
+            letter-spacing: -3px;
+            line-height: 1;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+        .cta-section p {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 48px;
+            position: relative;
+            z-index: 1;
+        }
+        .cta-section .hero-actions { position: relative; z-index: 1; }
+
+        /* Footer */
+        footer {
+            padding: 60px 40px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        footer p { font-size: 13px; color: var(--text-muted); }
+        .footer-links { display: flex; gap: 24px; }
+        .footer-links a { font-size: 13px; color: var(--text-muted); text-decoration: none; transition: color 0.3s; }
+        .footer-links a:hover { color: var(--text); }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
+            .features-grid { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .pricing-card.featured { transform: none; }
+            .showreel-grid { grid-template-columns: 1fr; }
+            .showreel-card:first-child { grid-column: span 1; }
+            nav .nav-links { display: none; }
+            .cursor { display: none; }
+        }
+        @media (max-width: 600px) {
+            .stats-bar { grid-template-columns: 1fr 1fr; padding: 30px 20px; }
+            .stat-item { padding: 20px; }
+            .features, .showreel, .pricing { padding: 80px 20px; }
+            footer { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+
+<!-- Nav -->
+<nav id="nav">
+    <div class="logo">
+        <div class="logo-icon">▶</div>
+        YouTube Studio
+    </div>
+    <ul class="nav-links">
+        <li><a href="#features">Возможности</a></li>
+        <li><a href="#showreel">Шоурил</a></li>
+        <li><a href="#pricing">Тарифы</a></li>
+    </ul>
+    <button class="nav-cta">Начать бесплатно</button>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-badge"><span class="dot"></span> Новая версия 3.0</div>
+    <h1>
+        <span class="outline">Создавай</span><br>
+        <span class="gradient-text">как профи</span>
+    </h1>
+    <p class="hero-sub">Все инструменты для роста канала: монтаж, аналитика, SEO и продвижение в одном месте. Без подписок на Adobe.</p>
+    <div class="hero-actions">
+        <button class="btn-primary">
+            Попробовать бесплатно
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+        <button class="btn-secondary">Смотреть демо</button>
+    </div>
+    <div class="hero-scroll">
+        <div class="scroll-line"></div>
+        Scroll
+    </div>
+</section>
+
+<!-- Stats -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <div class="stat-number">2M+</div>
+        <div class="stat-label">Авторов</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">15M+</div>
+        <div class="stat-label">Роликов создано</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">98%</div>
+        <div class="stat-label">Довольных</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">4.9</div>
+        <div class="stat-label">Рейтинг на Product Hunt</div>
+    </div>
+</div>
+
+<!-- Marquee -->
+<div class="marquee-section">
+    <div class="marquee">
+        <span class="marquee-item">Монтаж видео</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">Аналитика</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">SEO оптимизация</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">AI-инструменты</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">Автопубликация</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">Монтаж видео</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">Аналитика</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">SEO оптимизация</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">AI-инструменты</span>
+        <span class="marquee-item outline">•</span>
+        <span class="marquee-item">Автопубликация</span>
+        <span class="marquee-item outline">•</span>
+    </div>
+</div>
+
+<!-- Features -->
+<section class="features" id="features">
+    <div class="section-label">Возможности</div>
+    <h2 class="section-title">Все для роста<br>канала</h2>
+    <p class="section-sub">Заменили пять разных сервисов одной платформой. Экономим ваше время и нервы.</p>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">✂</div>
+            <h3>Умный монтаж</h3>
+            <p>AI автоматически находит лучшие моменты, добавляет субтитры и музыку. То, что раньше занимало часы — теперь 5 минут.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>Глубокая аналитика</h3>
+            <p>Отслеживай динамику, прогнозы, сравнение с конкурентами. Поймёшь, почему видео не зашло и что делать.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>SEO-аудит</h3>
+            <p>Автоматическая проверка title, description, тегов. Рекомендации на основе данных, а не догадок.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🤖</div>
+            <h3>AI-ассистент</h3>
+            <p>Генерация идей, написание сценариев, подбор хэштегов. Пишет как человек, а не как бот.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📅</div>
+            <h3>Планировщик</h3>
+            <p>Отложенная публикация, кросспостинг, автоматический постинг по расписанию аудитории.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">💬</div>
+            <h3>Комьюнити</h3>
+            <p>Менеджмент комментариев, ответы AI, анализ настроения аудитории. Не потеряешь ни одного фаната.</p>
+        </div>
+    </div>
+</section>
+
+<!-- Showreel -->
+<section class="showreel" id="showreel">
+    <div class="section-label">Шоурил</div>
+    <h2 class="section-title">Как это работает</h2>
+
+    <div class="showreel-grid">
+        <div class="showreel-card">
+            <div class="showreel-preview">
+                <div class="mock-thumb">YT</div>
+                <div class="showreel-info">
+                    <h4>Быстрый старт за 3 минуты</h4>
+                    <span>Подключи канал и начни создавать</span>
+                </div>
+                <div class="play-btn">
+                    <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+            </div>
+        </div>
+        <div class="showreel-card">
+            <div class="showreel-preview">
+                <div class="mock-thumb">ST</div>
+                <div class="showreel-info">
+                    <h4>Студия монтажа</h4>
+                    <span>Timeline, эффекты, переходы</span>
+                </div>
+                <div class="play-btn">
+                    <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+            </div>
+        </div>
+        <div class="showreel-card">
+            <div class="showreel-preview">
+                <div class="mock-thumb">AN</div>
+                <div class="showreel-info">
+                    <h4>Аналитика в реальном времени</h4>
+                    <span>Графики, прогнозы, воронки</span>
+                </div>
+                <div class="play-btn">
+                    <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+    <div class="section-label">Тарифы</div>
+    <h2 class="section-title">Простой выбор</h2>
+    <p class="section-sub">Начни бесплатно, масштабируйся по мере роста. Без скрытых платежей.</p>
+
+    <div class="pricing-grid">
+        <div class="pricing-card">
+            <div class="pricing-name">Starter</div>
+            <div class="pricing-price"><span class="currency">₽</span>0<span class="period"> / навсегда</span></div>
+            <p class="pricing-desc">Для тех, кто только начинает. Базовые функции бесплатно.</p>
+            <ul class="pricing-features">
+                <li>5 проектов</li>
+                <li>Базовый монтаж</li>
+                <li>Базовая аналитика</li>
+                <li class="muted">AI-ассистент</li>
+                <li class="muted">Приоритетная поддержка</li>
+            </ul>
+            <button class="pricing-btn">Начать</button>
+        </div>
+        <div class="pricing-card featured">
+            <div class="pricing-badge">Популярный</div>
+            <div class="pricing-name">Pro</div>
+            <div class="pricing-price"><span class="currency">₽</span>990<span class="period"> / месяц</span></div>
+            <p class="pricing-desc">Для растущих каналов. Все инструменты для масштабирования.</p>
+            <ul class="pricing-features">
+                <li>Безлимитные проекты</li>
+                <li>Продвинутый монтаж + AI</li>
+                <li>Глубокая аналитика</li>
+                <li>SEO-аудит</li>
+                <li>Приоритетная поддержка</li>
+            </ul>
+            <button class="pricing-btn">Выбрать Pro</button>
+        </div>
+        <div class="pricing-card">
+            <div class="pricing-name">Agency</div>
+            <div class="pricing-price"><span class="currency">₽</span>2900<span class="period"> / месяц</span></div>
+            <p class="pricing-desc">Для команд и студий. Управление несколькими каналами.</p>
+            <ul class="pricing-features">
+                <li>До 10 каналов</li>
+                <li>Все функции Pro</li>
+                <li>Командный доступ</li>
+                <li>API интеграции</li>
+                <li>White-label</li>
+            </ul>
+            <button class="pricing-btn">Связаться</button>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <h2>Готов(а) к росту?</h2>
+    <p>Присоединяйся к 2 000 000 авторов, которые уже создают контент проще</p>
+    <div class="hero-actions">
+        <button class="btn-primary">
+            Начать бесплатно
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <p>© 2026 YouTube Studio. Все права защищены.</p>
+    <div class="footer-links">
+        <a href="#">Политика</a>
+        <a href="#">Условия</a>
+        <a href="#">Контакты</a>
+    </div>
+</footer>
+
+<script>
+    // Cursor
+    const cursor = document.getElementById('cursor');
+    document.addEventListener('mousemove', e => {
+        cursor.style.left = e.clientX - 10 + 'px';
+        cursor.style.top = e.clientY - 10 + 'px';
+    });
+    document.querySelectorAll('button, a, .feature-card, .showreel-card').forEach(el => {
+        el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+        el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+    });
+
+    // Nav scroll
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // Intersection Observer for fade-in
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.feature-card, .pricing-card, .showreel-card').forEach((el, i) => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(40px)';
+        el.style.transition = `opacity 0.6s ease ${i * 0.1}s, transform 0.6s ease ${i * 0.1}s`;
+        observer.observe(el);
+    });
+</script>
+</body>
+</html>
